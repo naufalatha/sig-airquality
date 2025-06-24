@@ -1,103 +1,159 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { JABODETABEK_LOCATIONS } from "@/data/locations";
+import { useAirQuality } from "@/hooks/useAirQuality";
+import AirQualityCard from "@/components/AirQualityCard";
+import AirQualityStats from "@/components/AirQualityStats";
+import { LocationData } from "@/types";
+
+const AirQualityMap = dynamic(() => import("@/components/AirQualityMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-gray-100 animate-pulse rounded-xl" />
+  ),
+});
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(
+    null
+  );
+  const { airQualityData, loading, error, lastUpdated, refetch } =
+    useAirQuality(JABODETABEK_LOCATIONS);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const handleLocationClick = (location: LocationData) => {
+    setSelectedLocation(location);
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Error Loading Data
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={refetch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            Try Again
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-light text-gray-900 mb-2">
+            🌤️ Monitoring Kualitas Udara Jabodetabek
+          </h1>
+          <p className="text-gray-600">
+            Pantau kualitas udara di Jabodetabek secara real-time dengan data
+            terkini dari berbagai lokasi.
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Stats */}
+            <AirQualityStats
+              locations={JABODETABEK_LOCATIONS}
+              airQualityData={airQualityData}
+            />
+
+            {/* Location Cards */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                Locations
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {JABODETABEK_LOCATIONS.map((location) => {
+                  const data = airQualityData[location.id];
+                  if (!data) return null;
+
+                  return (
+                    <AirQualityCard
+                      key={location.id}
+                      location={location}
+                      data={data}
+                      isSelected={selectedLocation?.id === location.id}
+                      onClick={() => handleLocationClick(location)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Map */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[600px] overflow-hidden">
+              {loading ? (
+                <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center">
+                  <div className="text-gray-500">Loading map...</div>
+                </div>
+              ) : (
+                <AirQualityMap
+                  locations={JABODETABEK_LOCATIONS}
+                  airQualityData={airQualityData}
+                  onLocationClick={handleLocationClick}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <button
+            onClick={refetch}
+            disabled={loading}
+            className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <span>{loading ? "⏳" : "🔄"}</span>
+            {loading ? "Updating..." : "Update Data"}
+          </button>
+        </div>
+
+        {/* Last Updated */}
+        <div className="text-center mt-4">
+          <div className="text-sm text-gray-500">
+            <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse-slow"></span>
+            Last updated:{" "}
+            {lastUpdated
+              ? lastUpdated.toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-"}
+          </div>
+
+          {/* footer created by */}
+          <div className="text-sm text-gray-500 mt-4">
+            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse-slow"></span>
+            Created by{" "}
+            <a
+              href="https://github.com/naufalatha"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              Naufal Atha Yudha
+            </a>{" "}
+            | Mohamad Shafwan | Priski Jovanka
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
