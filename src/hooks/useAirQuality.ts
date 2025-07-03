@@ -9,6 +9,8 @@ export const useAirQuality = (locations: LocationData[]) => {
   const [error, setError] = useState<string | null>(null);
   const [fetchErrors, setFetchErrors] = useState<Record<string, string>>({});
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [nextUpdateIn, setNextUpdateIn] = useState<number>(60); // seconds until next update
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState<boolean>(true);
 
   const fetchAirQualityData = useCallback(async () => {
     setLoading(true);
@@ -60,7 +62,44 @@ export const useAirQuality = (locations: LocationData[]) => {
 
   useEffect(() => {
     fetchAirQualityData();
-  }, [fetchAirQualityData]);
+    setNextUpdateIn(60); // Reset countdown
+
+    let interval: NodeJS.Timeout | null = null;
+    let countdownInterval: NodeJS.Timeout | null = null;
+
+    if (autoRefreshEnabled) {
+      // Set up auto-refresh every 1 minute (60000ms)
+      interval = setInterval(() => {
+        fetchAirQualityData();
+        setNextUpdateIn(60); // Reset countdown after each fetch
+      }, 60000);
+
+      // Set up countdown timer that updates every second
+      countdownInterval = setInterval(() => {
+        setNextUpdateIn((prev) => {
+          if (prev <= 1) {
+            return 60; // Reset to 60 when it reaches 0
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    // Cleanup intervals on component unmount or when autoRefresh is disabled
+    return () => {
+      if (interval) clearInterval(interval);
+      if (countdownInterval) clearInterval(countdownInterval);
+    };
+  }, [fetchAirQualityData, autoRefreshEnabled]);
+
+  const toggleAutoRefresh = useCallback(() => {
+    setAutoRefreshEnabled((prev) => {
+      if (!prev) {
+        setNextUpdateIn(60); // Reset countdown when enabling
+      }
+      return !prev;
+    });
+  }, []);
 
   return {
     airQualityData,
@@ -68,6 +107,9 @@ export const useAirQuality = (locations: LocationData[]) => {
     error,
     fetchErrors,
     lastUpdated,
+    nextUpdateIn,
+    autoRefreshEnabled,
     refetch: fetchAirQualityData,
+    toggleAutoRefresh,
   };
 };
