@@ -19,8 +19,16 @@ export default function Home() {
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(
     null
   );
-  const { airQualityData, loading, error, lastUpdated, refetch } =
-    useAirQuality(JABODETABEK_LOCATIONS);
+  const {
+    airQualityData,
+    loading,
+    error,
+    lastUpdated,
+    nextUpdateIn,
+    autoRefreshEnabled,
+    refetch,
+    toggleAutoRefresh,
+  } = useAirQuality(JABODETABEK_LOCATIONS);
 
   const handleLocationClick = (location: LocationData) => {
     setSelectedLocation(location);
@@ -112,7 +120,7 @@ export default function Home() {
         </div>
 
         {/* Controls */}
-        <div className="flex justify-center items-center gap-4 mt-8">
+        <div className="flex justify-center items-center gap-4 mt-8 flex-wrap">
           <button
             onClick={refetch}
             disabled={loading}
@@ -121,20 +129,68 @@ export default function Home() {
             <span>{loading ? "⏳" : "🔄"}</span>
             {loading ? "Updating..." : "Update Data"}
           </button>
+
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
+              autoRefreshEnabled
+                ? "bg-green-50 border-green-200"
+                : "bg-gray-50 border-gray-200"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                autoRefreshEnabled
+                  ? "bg-green-500 animate-pulse"
+                  : "bg-gray-400"
+              }`}
+            ></div>
+            <span
+              className={`text-sm font-medium ${
+                autoRefreshEnabled ? "text-green-700" : "text-gray-600"
+              }`}
+            >
+              Auto-refresh: {autoRefreshEnabled ? "ON" : "OFF"}
+            </span>
+            {autoRefreshEnabled && (
+              <span className="text-xs text-green-600">
+                (next in {nextUpdateIn}s)
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={toggleAutoRefresh}
+            className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+              autoRefreshEnabled
+                ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                : "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            }`}
+          >
+            <span>{autoRefreshEnabled ? "⏸️" : "▶️"}</span>
+            {autoRefreshEnabled ? "Disable" : "Enable"}
+          </button>
         </div>
 
         {/* Last Updated */}
         <div className="text-center mt-4">
           <div className="text-sm text-gray-500">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse-slow"></span>
-            Last updated:{" "}
-            {lastUpdated
+            <span
+              className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                loading
+                  ? "bg-orange-500 animate-pulse"
+                  : "bg-green-500 animate-pulse-slow"
+              }`}
+            ></span>
+            {loading ? "Updating data..." : "Last updated:"}{" "}
+            {lastUpdated && !loading
               ? lastUpdated.toLocaleString("en-US", {
                   month: "short",
                   day: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
                 })
+              : loading
+              ? "..."
               : "-"}
           </div>
 
